@@ -9,14 +9,15 @@ PATTERN;
 LIST('https://check.torproject.org/exit-addresses')
 | parse(pattern:$pattern)
 | select(cc(exitAddress), *)
-| select(_color:(case when cc= 'CH' then '#FFA07A'	// Hex Code 
-					  when cc= 'NL' then '#8B4513'	// Hex Code 
+// Colors can be defined either as a hex code, RGB value or a keyword 
+| select(_color:(case when cc= 'CH' then '#FFA07A'						// create a column named _color<foo> to color individual cells 
+					  when cc= 'NL' then '#8B4513'						// color codes in hex
 				END),
-		_colorCell:(case  when cc= 'AT' then [232, 195, 102]	// RGB values
-						  else [250,230,210]					// RGB values
+		_colorExample1:(case  when cc= 'AT' then [232, 195, 102]		// color codes in RGB values
+						  else [250,230,210]				
 				END),
-		_rowcolor:(case when cc ='US' then 'mediumaquamarine' 	// Color keyword
-						when cc='DE' then 'powderblue' 			// Color keyword
+		_rowcolor:(case when cc ='US' then 'mediumaquamarine' 			// create a column named _rowcolor to color entire rows
+						when cc='DE' then 'powderblue' 					// color codes using keywords
 						else 'linen' 
 				END), 
 		 *)
