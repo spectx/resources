@@ -9,14 +9,14 @@ PATTERN;
 LIST('https://check.torproject.org/exit-addresses')
 | parse(pattern:$pattern)
 | select(cc(exitAddress), *)
-| select(_color:(case when cc= 'CH' then 'salmon'
-					  when cc= 'NL' then '#FF0000'
+| select(_color:(case when cc= 'CH' then '#FFA07A'	// Hex Code 
+					  when cc= 'NL' then '#8B4513'	// Hex Code 
 				END),
-		_colorCell:(case  when cc= 'AT' then [100, 0, 100]
-						  else [200,200,255]
+		_colorCell:(case  when cc= 'AT' then [232, 195, 102]	// RGB values
+						  else [250,230,210]					// RGB values
 				END),
-		_rowcolor:(case when cc ='US' then 'mediumaquamarine'
-						when cc='DE' then 'powderblue' 
+		_rowcolor:(case when cc ='US' then 'mediumaquamarine' 	// Color keyword
+						when cc='DE' then 'powderblue' 			// Color keyword
 						else 'linen' 
 				END), 
 		 *)
