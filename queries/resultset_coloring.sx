@@ -1,0 +1,22 @@
+$pattern = <<<PATTERN
+   (
+   'ExitNode ' LD:exitNode EOL
+   'Published ' TIMESTAMP('yyyy-MM-dd HH:mm:ss'):published EOL
+   'LastStatus ' TIMESTAMP('yyyy-MM-dd HH:mm:ss'):lastStatus EOL
+   )?  //the fields above can be missing in the dataset, hence by applying '?' we make sequence group optional
+   'ExitAddress ' IPV4:exitAddress ' ' TIMESTAMP('yyyy-MM-dd HH:mm:ss'):addrTime EOL
+PATTERN;
+LIST('https://check.torproject.org/exit-addresses')
+| parse(pattern:$pattern)
+| select(cc(exitAddress), *)
+| select(_color:(case when cc= 'CH' then 'salmon'
+					  when cc= 'NL' then '#FF0000'
+				END),
+		_colorCell:(case  when cc= 'AT' then [100, 0, 100]
+						  else [200,200,255]
+				END),
+		_rowcolor:(case when cc ='US' then 'mediumaquamarine'
+						when cc='DE' then 'powderblue' 
+						else 'linen' 
+				END), 
+		 *)
