@@ -1,82 +1,72 @@
 init(
-   from:now()[-14 day],
+ //  from:now()[-14 day], 
+   from:T('2020-03-14 00:00:00.000'),
    to:now()[+1 min]
 );
 
 $pattern = <<<PATTERN
-$FS=(EOLWIN| EOL);
-$asterisk= '**********************';
-$header= LD* $asterisk $FS
-	'Windows PowerShell transcript start' $FS
-	'Start time: ' TIMESTAMP('yyyyMMddHHmmss'):start_time $FS 
-	KVP{
-		LD:key ': '
-		LD:value $FS
-	}:attr
-	$asterisk $FS
-	;
-$commands= 
-('Transcript started, output file is ' LD:output_filename $FS)?
-(DATA{0,16000000}  >> (EOS|$header|$footer)):commands
-;
-
-$footer=
-($asterisk $FS
-'Windows PowerShell transcript end' $FS
-'End time: ' TIMESTAMP('yyyyMMddHHmmss'):end_time $FS 
-$asterisk ($FS |EOS))
-;
-
-$header $commands $footer?
+   $eol=(EOLWIN | EOL);
+   $asteriskLine='**********************' $eol;
+   $prologue=
+   $asteriskLine
+   ('Windows PowerShell' | 'PowerShell') ' transcript start' $eol
+   'Start time: ' TIMESTAMP('yyyyMMddHHmmss'):startTime $eol
+   KVP{LD:key ': ' LD*:value $eol}:props
+   $asteriskLine
+   ;
+   $epilogue=
+   $asteriskLine
+   ('Windows PowerShell' | 'PowerShell') ' transcript end' $eol
+   'End time: ' TIMESTAMP('yyyyMMddHHmmss'):endTime $eol
+   $asteriskLine
+   ;
+   $commandStartTime=
+   $asteriskLine
+   'Command start time: ' TIMESTAMP('yyyyMMddHHmmss'):commandStartTime $eol
+   $asteriskLine
+   ;
+   $commandText=
+   <<$asteriskLine                 // look behind for asterisk line
+   DATA{0,10485760}:commandText    // maximum 10MB
+   // match until $eol followed by next prologue, epilogue, commandStartTime or EndOfFile (EOF)
+   ($eol >>($prologue | $epilogue | $commandStartTime | EOF)) 
+   /*    
+   !!! note that the commandText is not sanitized and may contain "fake" asterisk line 
+   and other elements resembling technical blocks (prologue, epilogue, commandStart). !!!
+   */  
+   ;
+   (
+   // File must start with prologue, optionally with unicode endian sequence
+   (BOF '\ufeff'? $prologue:prologue)
+   // Next record must be one from list (prologue, epilogue, commandText with optional commandStartTime)
+   | ($prologue:prologue | $epilogue:epilogue | ($commandStartTime? $commandText))
+   )
 PATTERN;
 
-$cmd_pattern= <<<PATTERN
-$asterisk= '**********************';
-$FS=(EOLWIN| EOL);
-$cmd_start= ($asterisk $FS 'Command start time: ' TIMESTAMP('yyyyMMddHHmmss'):cmd_start_time  $FS $asterisk $FS);
 
-ARRAY{ $cmd_start? DATA:command >> ($cmd_start|EOS)}{0,}:commands
-PATTERN;
-
-$cmd_output_pattern= <<<PATTERN
-array{WINEOL? LD:command (WINEOL|EOL) DATA{0,1600000}:output ( (>> ('PS' LD '>'))|EOS)}{0,}:cmd_output
-PATTERN;
-
-// Modify with path to your files
-LIST('file:/C:/Logs/powershell/$yyyy$$MM$$dd$/PowerShell_transcript.*.$yyyy$$MM$$dd$$HH$$mm$$ss$.txt')
-           | filter(path_time >= $from[-1 day] and path_time <= $to[+1 day]) // filter selected days 
+LIST(src:'s3s://spectx-docs/logs/powershell_transcripts/$yyyy$$MM$$dd$/PowerShell_transcript.*.$yyyy$$MM$$dd$$HH$$mm$$ss$.txt')
+	| filter(path_time >= $from[-1 day] and path_time <= $to[+1 day]) // filter selected days 
 
 | parse(pattern:$pattern)
-| select(start_time,end_time,
-	Username:string(attr[Username]),
-	RunAs_User:string(attr[RunAs User]),
-	Machine:string(attr[Machine]),
-	Host_Application:string(attr[Host Application]),
-	PID:INT(attr[Process ID]),
-	PSVersion:string(attr[PSVersion]),
-	PSEdition:string(attr[PSEdition]),
-	PSCompatibleVersions:string(attr[PSCompatibleVersions]),
-	BuildVersion:string(attr[BuildVersion]),
-	CLRVersion:string(attr[CLRVersion]),
-	WSManStackVersion:string(attr[WSManStackVersion]),
-	PSRemotingProtocolVersion:string(attr[PSRemotingProtocolVersion]),
-	SerializationVersion:string(attr[SerializationVersion]),
-	output_filename,
-	commands)
-| select(commands:PARSE($cmd_pattern, commands),*)				// Apply the 2nd pattern to extract asterisks, start time and inttact commands-output
-| select(unnested_commands:UNNEST(commands),*)					// Unnest all commands
-| select(cmd_start:unnested_commands[cmd_start_time],
-		 command_output:unnested_commands[command],*)
-
-| select(parse($cmd_output_pattern,command_output),*)			// Apply cmd_output to extract commands and outputs
-| select(unnested_cmd_output:UNNEST(cmd_output),*)				// Unnest cmd_output
-| select(start_time,
-		 cmd_start,
-		 end_time,
-		 Username,
-		 command:unnested_cmd_output[command],
-		 output:unnested_cmd_output[output],*)	
-| unselect(unnested_commands,commands,attr,unnested_cmd_output,cmd_output,command_output)		// unselect unnecessary fields
-| sort(start_time DESC)											
-
-
+| select(prologue:keep(prologue), *)
+| select(start_time:prologue[startTime],
+	end_time:epilogue[endTime],
+	Username:prologue[props][Username] ,
+	RunAs_User:prologue[props][RunAs User],
+	Machine:prologue[props][Machine],
+	Host_Application:prologue[props][Host Application],
+	PID:INT(prologue[props][Process ID]),
+	PSVersion:string(prologue[props][PSVersion]),
+	PSEdition:string(prologue[props][PSEdition]),
+	PSCompatibleVersions:string(prologue[props][PSCompatibleVersions]),
+	BuildVersion:string(prologue[props][BuildVersion]),
+	CLRVersion:string(prologue[props][CLRVersion]),
+	WSManStackVersion:string(prologue[props][WSManStackVersion]),
+	PSRemotingProtocolVersion:string(prologue[props][PSRemotingProtocolVersion]),
+	SerializationVersion:string(prologue[props][SerializationVersion]),
+	*)
+	
+| select(*,command_value:parse("(EOL|WINEOL)? LD:command (WINEOL|EOL) DATA{0,10485760}:output ",commandText))					
+| select(*,command:command_value[command],output:command_value[output]) 
+| unselect(prologue,epilogue,command_value)
+| sort(start_time DESC)
