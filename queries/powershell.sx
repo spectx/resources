@@ -44,7 +44,7 @@ $pattern = <<<PATTERN
 PATTERN;
 
 
-LIST(src:'s3s://spectx-docs/logs/powershell_transcripts/$yyyy$$MM$$dd$/PowerShell_transcript.*.$yyyy$$MM$$dd$$HH$$mm$$ss$.txt')
+LIST(src:'s3s://spectx-docs/logs/windows/powershell_transcripts/$yyyy$$MM$$dd$/PowerShell_transcript.*.$yyyy$$MM$$dd$$HH$$mm$$ss$.txt')
 	| filter(path_time >= $from[-1 day] and path_time <= $to[+1 day]) // filter selected days 
 
 | parse(pattern:$pattern)
