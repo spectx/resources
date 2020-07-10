@@ -1,0 +1,46 @@
+INIT(
+  prefix: 's3://bucket/path/path2/E12QSKSMO12A37',
+  from:now()[-1 day],
+  to:now()
+);
+
+$pattern = <<<PATTERN
+   // https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/AccessLogs.html#BasicDistributionFileFormat
+   
+   (BOS '#Version:' LD EOL '#Fields: ' LD EOL)?
+   (
+   TIMESTAMP('yyyy-MM-dd\tHH:mm:ss', tz='GMT'):timestamp
+   LD:location
+   LONG:bytes
+   IPADDR:ip
+   LD:method
+   LD:host
+   LD:uri
+   INT:status
+   LD:referer
+   LD:user_agent
+   (
+   LD:uri_query
+   LD:cookie
+   LD:result_type
+   LD:request_id
+   LD:host_header
+   LD:protocol
+   LONG:cs_bytes
+   DOUBLE:time_taken
+   LD:x_forwarded_for
+   LD:ssl_protocol
+   LD:ssl_cipher
+   LD:response_result_type
+   LD:protocol_version
+   LD:fle_status    
+   LD:fle_encrypted_fields)(fs='\t')?
+   )(fs='\t') EOL
+PATTERN;
+	 
+LIST(src:$prefix+'.$yyyy$-$MM$-$dd$-$HH$.*.gz', _tz:'GMT')
+| filter(path_time >= $from[-6 hour] and path_time <= $to[+1 hour])
+| parse(pattern:$pattern)
+| filter(timestamp BETWEEN $from AND $to)
+| select(timestamp, location, bytes, ip, method, host, uri, status, referer, user_agent:URLDECODE(URLDECODE(user_agent)) // user_agent is double url decoded in cloudfront logs.
+		 ,*)
