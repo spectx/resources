@@ -1,0 +1,5 @@
+@[./view_default.sx]
+| filter(response >= 500 and response < 600)
+| select(count(*), uri)
+| group(uri)
+| sort(count desc)

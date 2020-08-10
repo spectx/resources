@@ -1,0 +1,4 @@
+@[./view_default.sx]
+| select(count(*), clientNet:IP_TRUNC(clientIp, 24))
+| group(clientNet)
+| sort(count desc)

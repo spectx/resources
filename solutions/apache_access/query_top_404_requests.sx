@@ -1,0 +1,5 @@
+@[./view_default.sx]
+| filter(response = 404)
+| select(count(*), uri)
+| group(uri)
+| sort(count desc)
