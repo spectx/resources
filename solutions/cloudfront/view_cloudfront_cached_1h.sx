@@ -1,0 +1,8 @@
+@stream=@[./view_cloudfront_path_time.sx](
+  from:now()[-30 day],
+  to:now()
+);
+
+@trigger=dual.select(now()[1 hour], true);
+
+CACHE_V1(path:'/user/cache/cloudfront_1h.sxt', trigger:@trigger, stream:@stream)

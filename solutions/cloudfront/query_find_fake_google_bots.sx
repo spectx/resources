@@ -1,0 +1,10 @@
+@[./view_default.sx]
+| select(ASN(ip), *)
+| filter(  user_agent like '%Googlebot/%'
+		or user_agent like 'AdsBot-Google/%'
+		or user_agent like '%AdsBot-Google-Mobile;%'
+		or user_agent like '%Google-Ads-Overview%'		
+		)
+| filter_out(asn = 15169)		
+| select(asname(ip), geo(ip), cc(ip), user_agent, *)
+

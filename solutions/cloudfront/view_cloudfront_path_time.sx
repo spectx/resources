@@ -1,0 +1,11 @@
+INIT(from:now()[-1 day], to:now());
+
+LIST(src:'s3s://my_s3_bucket/cloudfront/my_site.com/E20QIDIDIDIDE7.$yyyy$-$MM$-$dd$-$HH$.*.gz', _tz:'GMT')
+| filter(path_time >= $from[-2 hour] AND path_time <= $to)
+| parse(pattern:$[./pattern_cloudfront.sxt.sxp])
+| filter(timestamp >= $from AND timestamp <= $to)
+| select(timestamp, location, bytes, 
+		 ip:IP_TRUNC(ip, 32, 64),         // keep ipv4 addresses as is and truncate ipv6 addresses last 64 bits to zeros.
+		 method, host, uri, status, referer, 
+		 user_agent:URLDECODE(user_agent) // user_agent is url encoded in logs
+		 ,*)

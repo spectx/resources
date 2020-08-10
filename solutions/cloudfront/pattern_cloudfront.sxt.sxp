@@ -1,0 +1,31 @@
+// https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/AccessLogs.html#BasicDistributionFileFormat
+
+(BOS '#Version:' LD EOL '#Fields: ' LD EOL)?
+(
+  TIMESTAMP('yyyy-MM-dd\tHH:mm:ss', tz='GMT'):timestamp
+  LD:location
+  LONG:bytes
+  IPADDR:ip
+  LD:method
+  LD:host
+  LD:uri
+  INT:status
+  LD:referer
+  LD:user_agent
+  (
+  LD:uri_query
+  LD:cookie
+  LD:result_type
+  LD:request_id
+  LD:host_header
+  LD:protocol
+  LONG:cs_bytes
+  DOUBLE:time_taken
+  LD:x_forwarded_for
+  LD:ssl_protocol
+  LD:ssl_cipher
+  LD:response_result_type
+  LD:protocol_version
+  LD:fle_status    
+  LD:fle_encrypted_fields)(fs='\t')?
+)(fs='\t') EOL

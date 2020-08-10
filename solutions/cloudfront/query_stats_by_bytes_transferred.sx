@@ -1,0 +1,4 @@
+@[./view_default.sx]
+| select(day:timestamp[1 day], total_bytes:sum_long(bytes), total_cs_bytes:sum_long(cs_bytes))
+| group(day)
+

@@ -1,0 +1,4 @@
+@[./view_default.sx]
+| select(count(*), status)
+| group(status)
+| sort(count DESC)
