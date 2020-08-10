@@ -1,2 +1,6 @@
-LIST('file:/data/logs/web/************/access*')
+LIST([
+  'file:/data/logs/web/************/access*',
+  'file:/data/logs2/internal/**********/*.log',
+  'file:/data/logs3/public/web/access*https*'
+])
 | parse(pattern:$[/shared/patterns/apache_access.sxp])
