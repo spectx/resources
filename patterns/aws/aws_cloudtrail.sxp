@@ -55,4 +55,4 @@ JSON{
   STRING:sharedEventID,
   FLOAT:eventVersion
 }(flat=true, greedy='other')
-(',' | (']}' EOF))
+(',' | (']}' EOL? EOF))
