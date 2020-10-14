@@ -1,0 +1,2 @@
+LIST('file:/data/logs/web/access.log')
+| parse(pattern:$[/shared/patterns/apache_access.sxp])

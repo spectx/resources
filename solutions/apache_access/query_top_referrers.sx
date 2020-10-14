@@ -1,0 +1,4 @@
+@[./view_default.sx]
+| select(count(*), referrer)
+| group(referrer)
+| sort(count desc)

@@ -1,0 +1,4 @@
+@[./view_default.sx]
+| select(count(*), uri)
+| group(uri)
+| sort(count desc)
